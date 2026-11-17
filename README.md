@@ -113,11 +113,10 @@ Reports (HTML), plots (PDF) and tracks (bigWig) must be copied to your laptop to
 
 ```bash
 # one file
-```bash
 scp username@bf2i-galaxy.insa-lyon.fr:~/epigenomics_practical/multiqc/multiqc_chip_raw_small.html .
-```
 
-# all the HTML files of a folder (the quotes are needed)
+
+#all the HTML files of a folder (the quotes are needed)
 scp "username@bf2i-galaxy.insa-lyon.fr:~/epigenomics_practical/multiqc/*.html" .
 
 # a whole folder (-r = recursive)
