@@ -1,6 +1,6 @@
 # Epigenomics Practical
 
-Rita Rebollo – 4BIM (8h Practical)
+Rita Rebollo – 4th year INSA students (8h Practical)
 
 Updated November 2026
 
