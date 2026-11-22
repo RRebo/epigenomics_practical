@@ -379,7 +379,7 @@ macs3 callpeak -t chip_bam/H3K27me3_INV_rep2.chr12.bam -c chip_bam/input_INV.chr
 # how many peaks per sample?
 wc -l peaks/*Peak
 
-The columns on *_peaks.xls:** chr; start and end (1-based, the end base is included: unlike BED); length (end - start + 1); abs_summit (position of the highest point); pileup (height of the pile of reads at the summit); -log10(pvalue); fold_enrichment (ChIP versus the local lambda, at the summit); -log10(qvalue) (p-value corrected for the number of tests); name. With --broad, the pileup, p-value, q-value and fold enrichment are the mean over the region.
+# The columns on *_peaks.xls:** chr; start and end (1-based, the end base is included: unlike BED); length (end - start + 1); abs_summit (position of the highest point); pileup (height of the pile of reads at the summit); -log10(pvalue); fold_enrichment (ChIP versus the local lambda, at the summit); -log10(qvalue) (p-value corrected for the number of tests); name. With --broad, the pileup, p-value, q-value and fold enrichment are the mean over the region.
 ```
 
 **IGV inspection.** Download the peak files and open them in IGV together with the BAM files and tracks you already loaded.
@@ -399,21 +399,26 @@ The columns on *_peaks.xls:** chr; start and end (1-based, the end base is inclu
 ![](images/image6.png)
 
 
-First, the common set of regions and the counts (in the shell):
+First, the common set of regions and the counts:
 
 ```bash
 # 1) put the peaks of all four H3K4me3 samples in one list (columns 1-3 = chr, start, end), sort them, and merge overlapping ones into ONE common set of regions.
-# cat joins the four peak files into one list. | (pipe) sends the output of a command to the next command. cut -f1-3 keeps the fields (columns) 1 to 3 of every line, i.e. chromosome, start and end (a narrowPeak file has 10 columns; bedtools merge only needs the three first). sort -k1,1 -k2,2n sorts the lines by column 1 (the chromosome, as text) and then by column 2 (the start, as a number: n); bedtools merge needs a sorted file. bedtools merge -i - merges the regions that overlap or touch into one region (-i - = the input is the pipe). > writes the result in a file. wc -l counts the lines of the file, i.e. the number of merged regions.
+# cat joins the four peak files into one list. | (pipe) sends the output of a command to the next command.
+# cut -f1-3 keeps the fields (columns) 1 to 3 of every line, i.e. chromosome, start and end (a narrowPeak
+# file has 10 columns; bedtools merge only needs the three first). sort -k1,1 -k2,2n sorts the lines by
+# column 1 (the chromosome, as text) and then by column 2 (the start, as a number: n); bedtools merge needs
+# a sorted file. bedtools merge -i - merges the regions that overlap or touch into one region (-i - = the
+# input is the pipe). > writes the result in a file. wc -l counts the lines of the file, i.e. the number of
+# merged regions.
 
 cat peaks/H3K4me3_CTL_rep1_peaks.narrowPeak peaks/H3K4me3_CTL_rep2_peaks.narrowPeak peaks/H3K4me3_INV_rep1_peaks.narrowPeak peaks/H3K4me3_INV_rep2_peaks.narrowPeak | cut -f1-3 | sort -k1,1 -k2,2n | bedtools merge -i - > diffpeaks/H3K4me3_merged_peaks.bed
 wc -l diffpeaks/H3K4me3_merged_peaks.bed
-
-Why only H3K4me3? In this practical the differential analysis is done for H3K4me3 only: doing the same for H3K27me3 (broad regions) and then drawing the heatmaps over more regions would be too long for the time of the practical. You can do it if you want, after the practical: merge the *_peaks.broadPeak files of the H3K27me3 libraries and run the same steps (featureCounts, then DESeq2).
 ```
+Why only H3K4me3? In this practical the differential analysis is done for H3K4me3 only: doing the same for H3K27me3 (broad regions) and then drawing the heatmaps over more regions would be too long for the time of the practical. You can do it if you want, after the practical: merge the *_peaks.broadPeak files of the H3K27me3 libraries and run the same steps (featureCounts, then DESeq2).
 
 **IGV inspection.** Download the merged BED file and the narrowPeak files of Step A10 and load them in IGV one above the other (one track per file) to see how overlapping peaks become one region.
 
-**SAF versus GTF (evidence: Subread/featureCounts user guide, not re-fetched this session):** featureCounts needs an annotation that tells which regions to count. A GTF file has 9 columns (chromosome, source, feature type, start, end, score, strand, frame, attributes) and describes genes, exons, etc. A SAF (Simplified Annotation Format) file has only 5 columns (`GeneID`, `Chr`, `Start`, `End`, `Strand`) with a header line, and the coordinates are 1-based. SAF is made for regions that are not genes, like our peaks: no feature types and attributes are needed. The `GeneID` is the name of the region; here the name is chromosome_start_end.
+**SAF versus GTF:** featureCounts needs an annotation that tells which regions to count. A GTF file has 9 columns (chromosome, source, feature type, start, end, score, strand, frame, attributes) and describes genes, exons, etc. A SAF (Simplified Annotation Format) file has only 5 columns (`GeneID`, `Chr`, `Start`, `End`, `Strand`) with a header line, and the coordinates are 1-based. SAF is made for regions that are not genes, like our peaks: no feature types and attributes are needed. The `GeneID` is the name of the region; here the name is chromosome_start_end.
 
 
 ```bash
@@ -490,10 +495,9 @@ cat("candidate regions up in INV:", nrow(up), "   candidate regions down in INV:
 
 **IGV inspection:** download the UP and DOWN BED files and load them in IGV with the tracks, to look at some of the regions.
 
-```bash
-# a volcano plot in a PDF
-```
+
 ```r
+# a volcano plot in a PDF
 pdf("diffpeaks/H3K4me3_DESeq2_plots.pdf")
 
 # every region is grey by default
@@ -502,15 +506,13 @@ colours <- rep("grey70", nrow(res))
 colours[which(res$padj < 0.05 & res$log2FoldChange >= 0.6)] <- "hotpink"
 # blue = significant (adjusted p < 0.05) and less H3K4me3 in INV (log2 fold change of -0.6 or less)
 colours[which(res$padj < 0.05 & res$log2FoldChange <= -0.6)] <- "dodgerblue"
-```
-```bash
 plot(res$log2FoldChange, -log10(res$padj), pch = 20, cex = 0.5, col = colours, xlab = "log2 fold change (INV / CTL)", ylab = "-log10 adjusted p-value", main = "H3K4me3: INV versus CTL")
 abline(v = c(-0.6, 0.6), h = -log10(0.05), lty = 2)
 legend("topright", legend = c("up in INV", "down in INV", "not significant"), col = c("hotpink", "dodgerblue", "grey70"), pch = 20, bty = "n")
-```
-```bash
 dev.off()
+```
 
+```r
 # leave R
 q()
 ```
