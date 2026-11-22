@@ -126,12 +126,15 @@ scp -r username@bf2i-galaxy.insa-lyon.fr:~/epigenomics_practical/deeptools .
 > **Box1 : one CPU only**
 >
 > Every command below uses one CPU (`-t 1`, `--cores 1`, `-p 1`). **Bismark** is the exception to be aware of: it starts two Bowtie2 programs at the same time (one for each converted genome), so it can use two CPUs.
->
+
 > **Box2 : reading the commands**
 >
 > A backslash `\` at the end of a line only means “the command continues on the next line”. Lines starting with `#` are comments: you can paste them, they do nothing.
 
 ## Part A — ChIP-seq
+
+As discussed during the class, we will analyse Chromatin immunoprecipitation sequencing datasets. Remeber what we know about ChIP-seq:
+
 ![](images/image3.png)
 
 
@@ -157,7 +160,7 @@ R1 and R2 are the two ends (mates) of the same DNA fragment: paired-end sequenci
 ls fastq
 ```
 
-The full dataset comprises two paired-end files for each replicate of control and DNMT1 inactive (INV), for H3K4me3 and H3K27me3, along with the inputs. `We will not use all the files (H3K4me2 and H3K27me3 for both control and INV, along with the two inputs). The objective here is to have an idea of the command and the output.`
+The full dataset comprises two paired-end files for each replicate of control and DNMT1 inactive (INV), for H3K4me3 and H3K27me3, along with the inputs. We will not use all the files. The objective here is to have an idea of the command and the output.
 
 ### Step A2 — Quality control of the raw reads \[time: 45 s\]
 
@@ -219,7 +222,7 @@ Look at the trimming reports (`trimmed/*_trimming_report.txt`): which adapter wa
 ### Step A4 — Quality control again, after trimming \[time: 4 s\]
 
 ```bash
-# merge the trimming reports and the post-trimming FastQC reports (-q = quiet: MultiQC only prints warnings, not its long progress log)
+# merge the trimming reports and the post-trimming FastQC reports 
 multiqc trimmed/ -o multiqc/ -n multiqc_chip_trimmed_small -q
 
 # the same report for the complete libraries
@@ -246,13 +249,13 @@ bowtie2 -x $SHARED/index/mm10 -1 trimmed/H3K4me3_CTL_rep1_R1_val_1.fq.gz -2 trim
 bowtie2 -x $SHARED/index/mm10 -1 trimmed/input_CTL_R1_val_1.fq.gz -2 trimmed/input_CTL_R2_val_2.fq.gz -p 1 2> aligned/small_input_CTL_bowtie2.log | samtools view -b -f 2 -q 15 -o aligned/small_input_CTL.q15.bam -
 
 # Duplicate removal needs 4 small steps (same 4 lines for each sample):
-# (1) sort reads by name -n), so that mates are next to each other. 
+# (1) sort reads by name -n, so that mates are next to each other, necessary for fixmate
 samtools sort -n -o aligned/small_H3K4me3_CTL_rep1.nsort.bam aligned/small_H3K4me3_CTL_rep1.q15.bam
-# (2) fixmate -m adds the information needed to recognise duplicate pairs
+# (2) fixmate -m adds the information needed to recognize duplicate pairs
 samtools fixmate -m aligned/small_H3K4me3_CTL_rep1.nsort.bam aligned/small_H3K4me3_CTL_rep1.fixmate.bam
-# (3) sort again, by genome position
+# (3) sort again, by genome position for markdup
 samtools sort -o aligned/small_H3K4me3_CTL_rep1.csort.bam aligned/small_H3K4me3_CTL_rep1.fixmate.bam
-# (4) markdup -r removes (-r) the duplicate pairs
+# (4) markdup -r removes the duplicate pairs
 samtools markdup -r aligned/small_H3K4me3_CTL_rep1.csort.bam aligned/small_H3K4me3_CTL_rep1.dedup.bam
 
 samtools sort -n -o aligned/small_input_CTL.nsort.bam aligned/small_input_CTL.q15.bam
@@ -269,7 +272,7 @@ cat aligned/small_H3K4me3_CTL_rep1_bowtie2.log
 cat aligned/small_input_CTL_bowtie2.log
 ```
 
-**IGV inspection:** On your laptop, download a couple of the BAM files (and their index files `.bai`, the `*` of the first two lines takes both), then open them in IGV (genome mm10).
+**IGV inspection:** On your laptop, download a couple of the BAM files, then open them in IGV (genome mm10).
 
 ### Step A6 — Quality control of the alignment \[time: 6 s\]
 
@@ -307,7 +310,7 @@ cp $SHARED/annotation/* annotation/
 ls chip_bam/*.bam | wc -l
 ```
 
-**IGV inspection:** On your laptop, download the BAM files (and their index files `.bai`, the `*` of the first two lines takes both) and the annotation folder, then open them in IGV (genome mm10, region chr12). Also download the annotation files for chrm12, found on /annotation.
+**IGV inspection:** On your laptop, download the BAM files (and their index files `.bai`) and the annotation folder, then open them in IGV (genome mm10, region chr12). Also download the annotation files for chrm12, found on /annotation.
 
 ### Step A8 — Understand the input \[time: 27 min 03 s\]
 
